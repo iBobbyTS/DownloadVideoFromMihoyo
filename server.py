@@ -133,6 +133,16 @@ def get_js(path):
     return send_from_directory('js', path)
 
 
+@app.route('/img/<path:path>', methods=['GET'])
+def get_img(path):
+    return send_from_directory('img', path)
+
+
+@app.route('/resource/<path:path>', methods=['GET'])
+def get_resource(path):
+    return send_from_directory('resource', path)
+
+
 @app.route('/get_last_update_api', methods=['GET'])
 def get_last_update_api():
     return jsonify({'last_update': last_update})

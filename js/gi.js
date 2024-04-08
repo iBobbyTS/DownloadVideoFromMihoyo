@@ -1,3 +1,5 @@
+backend_url = '';
+
 function detectOS() {
     var platform = navigator.platform.toLowerCase();
     var userAgent = navigator.userAgent.toLowerCase();
@@ -18,7 +20,9 @@ if (os === 'Mac') {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 生成对应系统的下载提示
     document.getElementById('download-instruction').innerText = download_instructions;
+    // 搜索框回车搜索
     document.getElementById('keyword-input').addEventListener('keydown', function(event) {
         // Check if the key pressed is the Enter key
         if (event.key === 'Enter' || event.keyCode === 13) {
@@ -26,7 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
             search();
         }
     });
-
+    // 填入数据库上次更新时间
+    fetch(backend_url+'/get_last_update_api', {cache: "no-store"})
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('last-update').innerText += data['last_update'];
+        });
+    fetch(backend_url+'/get_status_api', {cache: "no-store"})
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('updating').innerHTML = `正在更新<img src="${backend_url}/img/loading.svg" alt="" height="32px"/>`;
+        });
 });
 
 function search() {
@@ -36,7 +50,7 @@ function search() {
             return;
         }
     }
-    let url = '/search_gi_api?keyword=' + keyword;
+    let url = backend_url+'/search_gi_api?keyword=' + keyword;
     fetch(url, {cache: "no-store"})
         .then(response => response.json())
         .then(data => {
