@@ -186,4 +186,4 @@ if __name__ == '__main__':
         scheduler_thread = Thread(target=run_scheduler)
         scheduler_thread.start()
     # Flask
-    app.run(debug=True)
+    app.run(debug=False)
