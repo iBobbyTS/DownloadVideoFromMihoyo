@@ -164,7 +164,12 @@ def get_status_api():
 @app.route('/search_gi_api', methods=['GET'])
 def search_gi_api():
     keyword = request.args.get('keyword')
-    fetch = conn.execute(f'SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP FROM DATA WHERE GAME="GI" AND TITLE LIKE "%{keyword}%" ORDER BY TIMESTAMP DESC;').fetchall()
+    # fetch = conn.execute(f'SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP FROM DATA WHERE GAME="GI" AND TITLE LIKE "%{keyword}%" ORDER BY TIMESTAMP DESC;').fetchall()
+    # 假设 `conn` 是一个数据库连接对象，`keyword` 是你想要搜索的关键词
+    keyword = "%{}%".format(keyword)  # 格式化关键词以用于LIKE操作
+    query = "SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP FROM DATA WHERE GAME=? AND TITLE LIKE ? ORDER BY TIMESTAMP DESC;"
+    params = ("GI", keyword)  # 使用元组来传递参数
+    fetch = conn.execute(query, params).fetchall()
     fetch = [{'title': item[0], 'content_id': item[1], 'artwork': item[2], 'video': item[3], 'timestamp': item[4]} for item in fetch]
     return jsonify({'result': fetch})
 
