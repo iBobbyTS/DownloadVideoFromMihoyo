@@ -43,11 +43,19 @@ def run_scheduler():
         conn_for_scheduler.close()
 
 
+def get_until_success(url, interval=30, headers=None):
+    while True:
+        try:
+            response = requests.get(url, headers=headers)
+            return response
+        except requests.exceptions.RequestException:
+            time.sleep(interval)
+
 
 def get_gi_and_store_in_sql():
     print('get_gi_and_store_in_sql')
     global conn_for_scheduler
-    response = requests.get('https://api-takumi-static.mihoyo.com/content_v2_user/app/16471662a82d418a/getContentList?iAppId=43&iChanId=719&iPageSize=1&iPage=1&sLangKey=zh-cn')
+    response = get_until_success('https://api-takumi-static.mihoyo.com/content_v2_user/app/16471662a82d418a/getContentList?iAppId=43&iChanId=719&iPageSize=1&iPage=1&sLangKey=zh-cn')
     data = response.json()
     total = math.ceil(data['data']['iTotal']/100)
     page_size = 100
@@ -55,7 +63,7 @@ def get_gi_and_store_in_sql():
     data_already_in_sql = [int(item[0]) for item in data_already_in_sql]
     for i in range(1, total+1):
         url = f'https://api-takumi-static.mihoyo.com/content_v2_user/app/16471662a82d418a/getContentList?iAppId=43&iChanId=719&iPageSize={page_size}&iPage={i}&sLangKey=zh-cn'
-        response = requests.get(url)
+        response = get_until_success(url)
         print(f'Page {i}/{total}')
         time.sleep(5)
         data = response.json()
@@ -82,7 +90,7 @@ def get_gi_and_store_in_sql():
             except (KeyError, IndexError):
                 artwork = ''
             url = f'https://ys.mihoyo.com/main/news/detail/{contentId}'
-            response = requests.get(url)
+            response = get_until_success(url)
             time.sleep(1)
             text = response.text.encode('utf-8').decode('unicode-escape').replace('&nbsp;', ' ')
             if '<video' in text:
@@ -118,7 +126,7 @@ def update_everything():
     get_gi_and_store_in_sql()
     print('Updated')
     updating = False
-    last_update = time.time()
+    last_update = int(time.time())
     with open('last_update.txt', 'w') as f:
         f.write(str(int(last_update)))
 

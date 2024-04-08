@@ -1,4 +1,5 @@
 backend_url = '';
+hide_non_video = false;
 
 function detectOS() {
     var platform = navigator.platform.toLowerCase();
@@ -19,6 +20,13 @@ if (os === 'Mac') {
     download_instructions = '按住Option点击下载';
 }
 
+function zfill(number, width) {
+    const numberAsString = number.toString();
+    const zerosNeeded = Math.max(width - numberAsString.length, 0);
+    const zeros = new Array(zerosNeeded + 1).join('0');
+    return zeros + numberAsString;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // 生成对应系统的下载提示
     document.getElementById('download-instruction').innerText = download_instructions;
@@ -34,12 +42,17 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch(backend_url+'/get_last_update_api', {cache: "no-store"})
         .then(response => response.json())
         .then(data => {
-            document.getElementById('last-update').innerText += data['last_update'];
+            let time = new Date(data['last_update']*1000);
+            document.getElementById('last-update').innerText += `${time.getFullYear()}-${time.getMonth() + 1}-${time.getDate()} ${zfill(time.getHours(), 2)}:${zfill(time.getMinutes(), 2)}`;
         });
     fetch(backend_url+'/get_status_api', {cache: "no-store"})
         .then(response => response.json())
         .then(data => {
-            document.getElementById('updating').innerHTML = `正在更新<img src="${backend_url}/img/loading.svg" alt="" height="32px"/>`;
+            if (data['updating']){
+                document.getElementById('updating').innerHTML = `正在更新<img src="${backend_url}/img/loading.svg" alt="" height="32px"/>`;
+            } else {
+                document.getElementById('updating').innerHTML = `已完成更新<img src="${backend_url}/img/done.svg" alt="" height="32px"/>`;
+            }
         });
 });
 
@@ -65,7 +78,9 @@ function search() {
                 } else {
                     video_td = `<td width="20%"><a href="${i['video']}" download="${title}.mp4" target="_blank">下载</a><br>或复制链接链接: <span>${video}</span></td>`;
                 }
-                innerHTML += `<tr class="${video === '' ? 'video' : 'photo'}"><td>${title}</td><td width="20%"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}"/></a></td>${video_td}</tr>`;
+                let date = new Date(i['timestamp']*1000);
+                const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+                innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}"/></a></td>${video_td}<td>${formattedDate}</td></tr>`;
             }
             if (data.length === 0) {
                 alert('未找到相关内容')

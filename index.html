@@ -13,7 +13,9 @@
         html {
             font-family: 'HWYihei', sans-serif;
         }
-
+    .non-video {
+        display: table-row;
+    }
     </style>
 </head>
 <body>
@@ -22,21 +24,31 @@
     <span id="last-update">上次更新：</span><br>
     <span id="updating"></span>
 </div>
+<span>目前只适合电脑浏览</span><br>
 <span>《崩坏：星穹铁道》会尽快更新</span><br>
-<span>请先前往</span><a href="https://space.bilibili.com/401742377/video">原神B站官方主页</a><span>找到视频名称，再回来粘贴</span>
-<h2>搜索</h2>
+<span>请先前往</span><a href="https://space.bilibili.com/401742377/video">原神B站官方主页</a><span>找到视频名称，再回来粘贴</span><br>
 <span>如</span><a href="https://www.bilibili.com/video/BV1Ro4y1S7f1">《原神》角色演示-「宵宫：真夏飞焰」</a><span>请输入“真夏飞焰”以匹配更多结果</span><br>
 <span>也可以输入角色名字或其他关键字进行搜索</span><br>
+<h2>搜索</h2>
 <label>
-    <input id="keyword-input" type="text" placeholder="真夏飞焰"/>
+    <input id="keyword-input" type="text" placeholder="妮露"/>
 </label>
-<button onclick="search()">搜索</button><br>
+<button onclick="search()">搜索</button>
+<button onclick="var display;if(hide_non_video){hide_non_video=false;display='table-row';this.innerText='隐藏无视频的行'}else{hide_non_video=true;display='none';this.innerText='显示无视频的行'}for (let i of document.getElementsByClassName('non-video')) {i.style.display=display}">隐藏无视频的行</button>
+<br>
 <table border="1px">
+    <colgroup>
+        <col>
+        <col>
+        <col>
+        <col style="width: 6em">
+    </colgroup>
     <thead>
     <tr>
         <th>标题</th>
         <th>封面 (<span style="font-weight: normal">点击图片进入原神官网</span>)</th>
         <th>下载 (<span style="font-weight: normal" id="download-instruction"></span>)</th>
+        <th>日期</th>
     </tr>
     </thead>
     <tbody id="result">
