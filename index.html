@@ -47,25 +47,23 @@
         }
     </style>
 </head>
-<body>
+<body style="padding: 15px 45px; margin: 1px">
 <h1>从原神官网下载高清素材</h1>
 <div style="position: absolute; top: 8px; right: 8px">
     <span id="last-update">上次更新：</span><br>
     <span id="updating"></span>
 </div>
 <span>目前只适合电脑浏览</span><br>
-<span>《崩坏：星穹铁道》会尽快更新</span><br>
-<span>请先前往</span><a href="https://space.bilibili.com/401742377/video">原神B站官方主页</a><span>找到视频名称，再回来粘贴</span><br>
-<span>如</span><a href="https://www.bilibili.com/video/BV1Ro4y1S7f1">《原神》角色演示-「宵宫：真夏飞焰」</a><span>请输入“真夏飞焰”以匹配更多结果</span><br>
-<span>也可以输入角色名字或其他关键字进行搜索</span><br>
+<span>请先前往</span><a href="https://space.bilibili.com/401742377/video">《原神》B站官方主页</a>/<a href="https://space.bilibili.com/1340190821/video">《崩坏：星穹铁道》B站官方主页</a><span>找到视频名称，再回来粘贴</span><br>
+<span>如</span><a href="https://www.bilibili.com/video/BV1jE421A7qK">《崩坏：星穹铁道》流萤角色PV——「壳中萤火」</a><span>可以输入“壳中萤火”或“流萤”以匹配更多可能得结果</span><br>
+<span>暂时原神和星铁的内容没有进行区分，等绝区零加入以后我会做这个功能。</span><br>
+<span>也可以输入角色名字或其他关键字（如EP、千星纪游...）进行搜索</span><br>
 <h2>搜索</h2>
 <label>
-    <input id="keyword-input" type="text" placeholder="妮露"/>
+    <input id="keyword-input" type="text" placeholder="流萤"/>
 </label>
 <button onclick="search()">搜索</button>
 <button onclick="var display;if(hide_non_video){hide_non_video=false;display='table-row';this.innerText='隐藏无视频的行'}else{hide_non_video=true;display='none';this.innerText='显示无视频的行'}for (let i of document.getElementsByClassName('non-video')) {i.style.display=display}">隐藏无视频的行</button>
-<br>
-<span>如果视频链接有乱码，点击图片跳转到原神官网页面再复制视频链接，过几天修复这个bug。</span>
 <br>
 <table border="1px">
     <colgroup>
@@ -77,7 +75,7 @@
     <thead>
     <tr>
         <th>标题</th>
-        <th>封面 (<span style="font-weight: normal">点击图片进入原神官网</span>)</th>
+        <th>封面 (<span style="font-weight: normal">点击图片进入对应官网页面</span>)</th>
         <th>下载 (<span style="font-weight: normal" id="download-instruction"></span>)</th>
         <th>日期</th>
     </tr>
@@ -85,6 +83,7 @@
     <tbody id="result">
     </tbody>
 </table>
+<span>注：例如“阮·梅”这样的名字，相关的视频无法被“阮梅”搜索到，但单个字“阮”可以搜索到，可能后续会优化。</span><br>
 <span>&nbsp;</span>
 <footer style="position: relative; bottom: 8px">
     <span>由iBobby开发，需要联系请发邮件到<a href="mailto:ibobbyts@gmail.com">iBobbyTS@gmail.com</a>. 代码已开源到<a href="https://github.com/iBobbyTS/DownloadVideoFromMihoyo">iBobbyTS/DownloadVideoFromMihoyo</a></span>
