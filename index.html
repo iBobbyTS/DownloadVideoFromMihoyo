@@ -5,17 +5,46 @@
     <title>从原神官网下载高清素材</title>
     <script src="js/gi.js"></script>
     <style>
+        {#设定字体#}
         @font-face {
             font-family: 'HWYihei';
             src: url('resource/font/HYWenHei-55W.ttf') format('truetype');
         }
-
         html {
             font-family: 'HWYihei', sans-serif;
         }
-    .non-video {
-        display: table-row;
-    }
+        {#设定非视频的行#}
+        .non-video {
+            display: table-row;
+        }
+        {#设定折叠展开#}
+        .collapsed {
+            max-height: 10em; /* 指定折叠后的高度 */
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .expanded {
+            {#max-height: 150%; /* 确保展开时能显示全部内容 */#}
+            transition: max-height 0.5s ease-in;
+        }
+        .image-container {
+            position: relative;
+        }
+        .toggle-button {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            display: none;
+        }
+        .image-container:hover .toggle-button {
+            display: block;
+        }
     </style>
 </head>
 <body>

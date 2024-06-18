@@ -27,6 +27,19 @@ function zfill(number, width) {
     return zeros + numberAsString;
 }
 
+function toggleImage(index) {
+    const container = document.getElementById(`image-container-${index}`);
+    const button = container.querySelector('.toggle-button');
+    if (container.classList.contains('collapsed')) {
+        container.classList.remove('collapsed');
+        container.classList.add('expanded');
+        button.textContent = '折叠';
+    } else {
+        container.classList.remove('expanded');
+        container.classList.add('collapsed');
+        button.textContent = '展开';
+    }
+}
 document.addEventListener('DOMContentLoaded', function() {
     // 生成对应系统的下载提示
     document.getElementById('download-instruction').innerText = download_instructions;
@@ -56,6 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 });
 
+function img_onload(tag) {
+    if (tag.height < tag.width) {
+        tag.parentElement.nextElementSibling.style.display = 'none';
+    }
+}
+
+
 function search() {
     let keyword = document.getElementById('keyword-input').value;
     if (keyword === '') {
@@ -69,6 +89,7 @@ function search() {
         .then(data => {
             let innerHTML = '';
             data = data['result'];
+            let index = 0;
             for (let i of data) {
                 let title = i['title'].replace('《原神》', '');
                 let video = i['video'];
@@ -80,7 +101,9 @@ function search() {
                 }
                 let date = new Date(i['timestamp']*1000);
                 const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-                innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}"/></a></td>${video_td}<td>${formattedDate}</td></tr>`;
+                // innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}"/></a></td>${video_td}<td>${formattedDate}</td></tr>`;
+                innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><div class="image-container collapsed" id="image-container-${index}"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}" onload="img_onload(this)"/></a><button class="toggle-button" onclick="toggleImage(${index})">展开</button></div></td>${video_td}<td>${formattedDate}</td></tr>`;
+                index += 1;
             }
             if (data.length === 0) {
                 alert('未找到相关内容')
