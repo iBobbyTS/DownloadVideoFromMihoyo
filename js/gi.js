@@ -33,10 +33,12 @@ function toggleImage(index) {
     if (container.classList.contains('collapsed')) {
         container.classList.remove('collapsed');
         container.classList.add('expanded');
+        container.style.maxHeight = 'none';
         button.textContent = '折叠';
     } else {
         container.classList.remove('expanded');
         container.classList.add('collapsed');
+        container.style.maxHeight = container.querySelector('img').width/1.5+'px';
         button.textContent = '展开';
     }
 }
@@ -70,7 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function img_onload(tag) {
-    if (tag.height < tag.width) {
+    tag.parentElement.parentElement.style.maxHeight=tag.width/1.5+'px';
+    if (tag.height < tag.width/1.5) {
         tag.parentElement.nextElementSibling.style.display = 'none';
     }
 }
