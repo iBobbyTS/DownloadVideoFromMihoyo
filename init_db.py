@@ -22,3 +22,5 @@ CREATE TABLE DATA
 ''')
 print("Table created successfully")
 conn.close()
+with open('last_update.txt', 'w') as f:
+    f.write('0')
