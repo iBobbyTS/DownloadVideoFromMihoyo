@@ -30,8 +30,13 @@ break_if_nothing_to_insert = False
 def signal_handler(sig, frame):
     conn_for_scheduler.commit()
     conn_for_scheduler.close()
+    schedule.clear()
     print('Received Ctrl-C, exiting...')
-    # exit(1)
+    if 'gunicorn' in os.environ.get('SERVER_SOFTWARE', '') or 'gunicorn' in ' '.join(sys.argv):
+        print("运行在 Gunicorn 上")
+    else:
+        print("运行在 Python 上")
+        exit(1)
 
 
 # Schedule update
@@ -53,7 +58,6 @@ def get_until_success(url, interval=30, headers=None, try_count=10):
     while True:
         try:
             tried_count += 1
-            print('First trial')
             response = requests.get(url, headers=headers, timeout=10)
             return response
         except requests.exceptions.RequestException as e:
@@ -111,11 +115,6 @@ def get_gi_and_store_in_sql():
                 script = script[index + 9:]
                 end = script.find('",')
                 content = script[:end]
-            # try:
-            #     content = eval("f'" + content + "'")
-            # except SyntaxError:
-            #     print(script)
-            #     exit(10)
             content = content.replace('\\"', '"')
             content = etree.HTML(content)
             video = content.xpath('//video/@src')
@@ -143,6 +142,83 @@ def get_gi_and_store_in_sql():
         if not record_count and break_if_nothing_to_insert:
             break
 
+def get_hsr_and_store_in_sql():
+    print('get_hsr_and_store_in_sql')
+    global conn_for_scheduler
+    response = get_until_success('https://api-takumi-static.mihoyo.com/content_v2_user/app/1963de8dc19e461c/getContentList?iPage=1&iPageSize=20&sLangKey=zh-cn&isPreview=0&iChanId=255')
+    data = response.json()
+    total = math.ceil(data['data']['iTotal']/100)
+    page_size = 100
+    data_already_in_sql = conn_for_scheduler.execute('SELECT CONTENT_ID FROM DATA WHERE GAME="HSR";').fetchall()
+    data_already_in_sql = [int(item[0]) for item in data_already_in_sql]
+    for i in range(1, total+1):
+        url = f'https://api-takumi-static.mihoyo.com/content_v2_user/app/1963de8dc19e461c/getContentList?iPage={i}&iPageSize={page_size}&sLangKey=zh-cn&isPreview=0&iChanId=255'
+        response = get_until_success(url)
+        print(f'Page {i}/{total}')
+        time.sleep(5)
+        data = response.json()
+        if data['retcode'] != 0:
+            print('Failed to get data')
+            return
+        data = data['data']['list']
+        record_count = 0
+        for item in data:
+            contentId = item['iInfoId']
+            title = item['sTitle']
+            if contentId in data_already_in_sql:
+                print('skipping ' + title)
+                continue
+            record_count += 1
+            dtCreateTime = item['dtCreateTime']
+            dtCreateTime = datetime.datetime.strptime(dtCreateTime, '%Y-%m-%d %H:%M:%S')
+            timestamp = int(dtCreateTime.timestamp())
+            print(title)
+            title = title.replace("'", "''")
+            url = f'https://sr.mihoyo.com/news/{contentId}'
+            response = get_until_success(url)
+            time.sleep(1)
+            text = response.text
+            text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda x: chr(int(x.group(1), 16)), text)
+            text = text.replace('&nbsp;', ' ')
+            html = etree.HTML(text)
+            script = html.xpath('//script[contains(text(), "window.__NUXT__")]/text()')[0]
+            while True:
+                index = script.find('sContent:"')
+                if index == -1:
+                    break
+                script = script[index + 9:]
+                end = script.find('",')
+                content = script[:end]
+            content = content.replace('\\"', '"')
+            content = etree.HTML(content)
+            video = content.xpath('//video/@src')
+            if video:
+                video = video[0]
+            else:
+                video = ''
+            try:
+                artwork = item['sExt']
+                artwork = json.loads(artwork)['news-poster'][0]['url']
+            except (KeyError, IndexError):
+                artwork = content.xpath('//img/@src')
+                if artwork:
+                    artwork = artwork[0]
+                else:
+                    artwork = ''
+            statement = f'''INSERT INTO DATA (GAME, TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP) VALUES ("HSR", \'{title}\', {contentId}, "{artwork}", "{video}", {timestamp});'''
+            try:
+                conn_for_scheduler.execute(statement)
+            except sqlite3.OperationalError as e:
+                print(e)
+                print(statement)
+                return
+            except sqlite3.ProgrammingError as e:
+                print(e)
+                exit(1)
+        conn_for_scheduler.commit()
+        if not record_count and break_if_nothing_to_insert:
+            break
+
 
 # Update everything
 def update_everything():
@@ -154,6 +230,7 @@ def update_everything():
         return
     updating = True
     print('Updating...')
+    get_hsr_and_store_in_sql()
     get_gi_and_store_in_sql()
     print('Updated')
     updating = False
@@ -198,10 +275,11 @@ def search_gi_api():
     # fetch = conn.execute(f'SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP FROM DATA WHERE GAME="GI" AND TITLE LIKE "%{keyword}%" ORDER BY TIMESTAMP DESC;').fetchall()
     # 假设 `conn` 是一个数据库连接对象，`keyword` 是你想要搜索的关键词
     keyword = "%{}%".format(keyword)  # 格式化关键词以用于LIKE操作
-    query = "SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP FROM DATA WHERE GAME=? AND TITLE LIKE ? ORDER BY TIMESTAMP DESC;"
-    params = ("GI", keyword)  # 使用元组来传递参数
+    # query = "SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP FROM DATA WHERE GAME=? AND TITLE LIKE ? ORDER BY TIMESTAMP DESC;"
+    query = "SELECT TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP, GAME FROM DATA WHERE TITLE LIKE ? ORDER BY TIMESTAMP DESC;"
+    params = (keyword,)  # 使用元组来传递参数
     fetch = conn.execute(query, params).fetchall()
-    fetch = [{'title': item[0], 'content_id': item[1], 'artwork': item[2], 'video': item[3], 'timestamp': item[4]} for item in fetch]
+    fetch = [{'title': item[0], 'content_id': item[1], 'artwork': item[2], 'video': item[3], 'timestamp': item[4], 'game': item[5]} for item in fetch]
     return jsonify({'result': fetch})
 
 
