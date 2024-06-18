@@ -1,5 +1,6 @@
 import json
 import os.path
+import re
 import time
 import math
 import datetime
@@ -8,17 +9,19 @@ import sqlite3
 from threading import Thread
 import requests
 import schedule
+from lxml import etree
 from flask import Flask, request, jsonify, send_from_directory, send_file
 
 app = Flask(__name__)
 # CORS(app, origins=["content-static.mihoyo.com"])  # Enable CORS for all domains on all routes
 conn = sqlite3.connect('database.db', check_same_thread=False)
 
+last_update = 0
 if os.path.exists('last_update.txt'):
     with open('last_update.txt', 'r') as f:
-        last_update = int(f.read())
-else:
-    last_update = 0
+        file_content = f.read()
+        if file_content:
+            last_update = int(file_content)
 updating = False
 break_if_nothing_to_insert = False
 
@@ -50,9 +53,11 @@ def get_until_success(url, interval=30, headers=None, try_count=10):
     while True:
         try:
             tried_count += 1
-            response = requests.get(url, headers=headers)
+            print('First trial')
+            response = requests.get(url, headers=headers, timeout=10)
             return response
         except requests.exceptions.RequestException as e:
+            print(f'Retrying {url} on {tried_count}/{try_count}')
             time.sleep(interval)
             if tried_count >= try_count:
                 raise e
@@ -91,24 +96,42 @@ def get_gi_and_store_in_sql():
             timestamp = int(dtCreateTime.timestamp())
             print(title)
             title = title.replace("'", "''")
+            url = f'https://ys.mihoyo.com/main/news/detail/{contentId}'
+            response = get_until_success(url)
+            time.sleep(1)
+            text = response.text
+            text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda x: chr(int(x.group(1), 16)), text)
+            text = text.replace('&nbsp;', ' ')
+            html = etree.HTML(text)
+            script = html.xpath('//script[contains(text(), "window.__NUXT__")]/text()')[0]
+            while True:
+                index = script.find('content:"')
+                if index == -1:
+                    break
+                script = script[index + 9:]
+                end = script.find('",')
+                content = script[:end]
+            # try:
+            #     content = eval("f'" + content + "'")
+            # except SyntaxError:
+            #     print(script)
+            #     exit(10)
+            content = content.replace('\\"', '"')
+            content = etree.HTML(content)
+            video = content.xpath('//video/@src')
+            if video:
+                video = video[0]
+            else:
+                video = ''
             try:
                 artwork = item['sExt']
                 artwork = json.loads(artwork)['720_1'][0]['url']
             except (KeyError, IndexError):
-                artwork = ''
-            url = f'https://ys.mihoyo.com/main/news/detail/{contentId}'
-            response = get_until_success(url)
-            time.sleep(1)
-            text = response.text.encode('utf-8').decode('unicode-escape').replace('&nbsp;', ' ')
-            if '<video' in text:
-                url = text[text.index('<video '):].split('\n')[0]
-                url = url[url.index(' src="') + 6:]
-                video = url[:url.index('">')]
-                if '" ' in video:
-                    video = video[:video.index('" ')]
-                print(video)
-            else:
-                video = ''
+                artwork = content.xpath('//img/@src')
+                if artwork:
+                    artwork = artwork[0]
+                else:
+                    artwork = ''
             statement = f'''INSERT INTO DATA (GAME, TITLE, CONTENT_ID, ARTWORK, VIDEO, TIMESTAMP) VALUES ("GI", \'{title}\', {contentId}, "{artwork}", "{video}", {timestamp});'''
             try:
                 conn_for_scheduler.execute(statement)
