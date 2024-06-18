@@ -78,6 +78,10 @@ function img_onload(tag) {
     }
 }
 
+function img_onerror(tag){
+    tag.parentElement.nextElementSibling.style.display = 'none';
+}
+
 
 function search() {
     let keyword = document.getElementById('keyword-input').value;
@@ -96,6 +100,7 @@ function search() {
             for (let i of data) {
                 let title = i['title'].replace('《原神》', '');
                 let video = i['video'];
+                let game = i['game'];
                 let video_td;
                 if (video === '') {
                     video_td = '<td width="20%">无视频</td>';
@@ -105,7 +110,7 @@ function search() {
                 let date = new Date(i['timestamp']*1000);
                 const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
                 // innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}"/></a></td>${video_td}<td>${formattedDate}</td></tr>`;
-                innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><div class="image-container collapsed" id="image-container-${index}"><a href="https://ys.mihoyo.com/main/news/detail/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}" onload="img_onload(this)"/></a><button class="toggle-button" onclick="toggleImage(${index})">展开</button></div></td>${video_td}<td>${formattedDate}</td></tr>`;
+                innerHTML += `<tr class="${video === '' ? 'non-video' : 'video'}"><td>${title}</td><td width="20%"><div class="image-container collapsed" id="image-container-${index}"><a href="${game === 'GI' ? 'https://ys.mihoyo.com/main/news/detail' : 'https://sr.mihoyo.com/news'}/${i['content_id']}" target="_blank"><img width="100%" src="${i['artwork']}" alt="${title}" onerror="img_onerror(this)" onload="img_onload(this)"/></a><button class="toggle-button" onclick="toggleImage(${index})">展开</button></div></td>${video_td}<td>${formattedDate}</td></tr>`;
                 index += 1;
             }
             if (data.length === 0) {
