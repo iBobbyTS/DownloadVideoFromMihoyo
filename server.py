@@ -23,6 +23,7 @@ updating = False
 break_if_nothing_to_insert = False
 
 
+# Save on exit
 def signal_handler(sig, frame):
     conn_for_scheduler.commit()
     conn_for_scheduler.close()
@@ -30,6 +31,7 @@ def signal_handler(sig, frame):
     exit(1)
 
 
+# Schedule update
 def run_scheduler():
     global conn_for_scheduler
     conn_for_scheduler = sqlite3.connect('database.db', check_same_thread=False)
@@ -43,15 +45,20 @@ def run_scheduler():
         conn_for_scheduler.close()
 
 
-def get_until_success(url, interval=30, headers=None):
+def get_until_success(url, interval=30, headers=None, try_count=10):
+    tried_count = 0
     while True:
         try:
+            tried_count += 1
             response = requests.get(url, headers=headers)
             return response
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
             time.sleep(interval)
+            if tried_count >= try_count:
+                raise e
 
 
+# Update function for Genshin Impact
 def get_gi_and_store_in_sql():
     print('get_gi_and_store_in_sql')
     global conn_for_scheduler
@@ -114,6 +121,7 @@ def get_gi_and_store_in_sql():
             break
 
 
+# Update everything
 def update_everything():
     print('update_everything')
     global updating, last_update
@@ -180,15 +188,24 @@ def update_api():
     return jsonify({'status': 'updating'})
 
 
+if __name__ == 'server':
+    # Save last_update on Ctrl-C
+    signal.signal(signal.SIGINT, signal_handler)
+    # Schedule
+    schedule.every().day.at("14:00").do(update_everything)
+    # Create and start the scheduler thread
+    scheduler_thread = Thread(target=run_scheduler)
+    scheduler_thread.start()
+
+
 if __name__ == '__main__':
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        print('WERKZEUG_RUN_MAIN')
-        # Save last_update on Ctrl-C
-        signal.signal(signal.SIGINT, signal_handler)
-        # Schedule
-        schedule.every().day.at("14:00").do(update_everything)
-        # Create and start the scheduler thread
-        scheduler_thread = Thread(target=run_scheduler)
-        scheduler_thread.start()
+    print('WERKZEUG_RUN_MAIN')
+    # Save last_update on Ctrl-C
+    signal.signal(signal.SIGINT, signal_handler)
+    # Schedule
+    schedule.every().day.at("14:00").do(update_everything)
+    # Create and start the scheduler thread
+    scheduler_thread = Thread(target=run_scheduler)
+    scheduler_thread.start()
     # Flask
     app.run(debug=False, host='0.0.0.0', port=1203)
