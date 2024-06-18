@@ -28,7 +28,7 @@ def signal_handler(sig, frame):
     conn_for_scheduler.commit()
     conn_for_scheduler.close()
     print('Received Ctrl-C, exiting...')
-    exit(1)
+    # exit(1)
 
 
 # Schedule update
